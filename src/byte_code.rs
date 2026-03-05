@@ -29,7 +29,7 @@ impl ChunkSt {
 }
 
 pub trait Chunk {
-    fn write_chunk(&mut self, byte: u8 );
+    fn write_chunk(&mut self, byte: u8,line: u8);
     fn add_constant(&mut self, value: f32)-> u8;
     //debug
     fn constant_instruct(&self,name: &str, offset: u8);
@@ -37,8 +37,9 @@ pub trait Chunk {
 }
 
 impl Chunk for ChunkSt {
-    fn write_chunk(&mut self, byte: u8) {
+    fn write_chunk(&mut self, byte: u8,line: u8) {
         self.code.push(byte);
+        self.lines.push(line);
     }
 
     fn add_constant(&mut self,value: f32)-> u8 {
@@ -49,7 +50,7 @@ impl Chunk for ChunkSt {
 
     fn constant_instruct(&self,name: &str, offset: u8){
         let constant = self.code[(offset+1) as usize]; // const idx
-        println!("{:04} {:<16} {} '{}'",offset,name,constant,self.constants[constant as usize]);
+        print!("{:<16} {} '{}'\n",name,constant,self.constants[constant as usize]);
 
     }
 
@@ -57,11 +58,17 @@ impl Chunk for ChunkSt {
         println!("== {} ==",name);
         let mut i = 0;
         while i<self.code.len(){
+            print!("{:04} ",i);
+            if i>0 && self.lines[i] == self.lines[i-1]{
+                print!("  | ");
+            } else {
+                print!("{:} ",self.lines[i]);
+            }
             let instruction = self.code[i];
             let op_code = unsafe {std::mem::transmute::<u8, OpCode>(instruction)};
             match op_code {
                 OpCode::OpReturn=> {
-                    println!("{:04} OP_RETURN",i);
+                    print!("OP_RETURN\n");
                     i+=1;
                 },
                 OpCode::OpConstant=> {
@@ -69,7 +76,7 @@ impl Chunk for ChunkSt {
                     i+=2;
                 }
                 _=> {
-                    println!("Unknown opcode {:?}\n",op_code);
+                    println!("Unknown opcode {:?}",op_code);
                     i+=1;}
             }
         }
