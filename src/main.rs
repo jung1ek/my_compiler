@@ -4,7 +4,15 @@ use std::io::prelude::*;
 
 mod scanner;
 mod token_type;
+mod byte_code;
+mod vm;
+mod op;
+mod compiler;
+
+use byte_code::*;
 use scanner::*;
+use vm::*;
+use compiler::*;
 // use token_type::Token;
 
 fn main()-> std::io::Result<()> {
@@ -15,11 +23,15 @@ fn main()-> std::io::Result<()> {
 		let _text = read_file(path)?;
 		text = _text;
 		println!("{:?}",text);
+		interpret(&text);
+
+
     }else {
 		println!("Usage: run [file_path]");
     }
-	let mut scanner = ScannerSt::new(text);
-	let tokens = scanner.scan_tokens();
+	// let mut scanner = ScannerSt::new(text);
+	// let tokens = scanner.scan_tokens();
+	// println!("{:?}",tokens);
     Ok(())
 }
 
