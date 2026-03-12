@@ -1,7 +1,8 @@
 use std::fmt;
 
-#[derive(Debug)]
-#[derive(Clone)]
+#[derive(Debug)] // to print explictly
+#[derive(Clone)] // to clone this enum
+#[derive(PartialEq)] // to apply binary eq
 pub enum TokenType {
     // single-char tokens.
     LeftParen, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE,
@@ -16,7 +17,7 @@ pub enum TokenType {
     // Keywords.
     AND, CLASS, ELSE, FALSE, FUN, FOR, IF, NIL, OR,
     PRINT, RETURN, SUPER, THIS, TRUE, VAR, WHILE,
-    EOF
+    EOF, Error
 }
 
 impl fmt::Display for TokenType{
@@ -30,6 +31,7 @@ impl fmt::Display for TokenType{
 }
 
 #[derive(Debug)]
+#[derive(Clone)]
 pub enum Literal {
     Integer(i32),
     Float(f32),
@@ -38,8 +40,10 @@ pub enum Literal {
 }
 
 #[derive(Debug)]
+#[derive(Clone)]
 pub struct Token {
     pub token_type: TokenType, // type of token; identifier, value, keywords ...
+    // pub start: &char,
     pub lexeme: String, // string value of that token
     pub literal: Option<Literal>, // literal value of that token
     pub line: usize, // in which line it exist.
