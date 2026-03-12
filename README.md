@@ -105,7 +105,7 @@ Result:
 
 ```
 cargo run src/test.txt
-
+```
 ## Example
 
 Input:
