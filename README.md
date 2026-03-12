@@ -101,16 +101,10 @@ Result:
 7
 ```
 
-## Project Structure
+## Usage command
 
 ```
-src/
- ├── scanner.rs   # text → tokens
- ├── parser.rs    # tokens → bytecode (Pratt parser)
- ├── chunk.rs     # bytecode representation
- ├── vm.rs        # virtual machine
- └── main.rs      # entry point
-```
+cargo run src/test.txt
 
 ## Example
 
