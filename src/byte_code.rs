@@ -1,19 +1,21 @@
 // operation code => mul, add ...
 
-type value = f32;
+pub type Value = f32;
 
 #[derive(Debug)]
 // #[repr(u8)]
 pub enum OpCode {
-    OpReturn,
-    OpConstant
+    OpReturn,OpConstant,
+    OpNegate,OpMul,
+    OpAdd, OpSub, 
+    OpDiv
 }
 
 #[derive(Debug)]
 pub struct ChunkSt {
-    code: Vec<u8>,
+    pub code: Vec<u8>,
     const_idx: u8,
-    constants: Vec<f32>,
+    pub constants: Vec<Value>,
     lines: Vec<u8>
 }
 
@@ -21,7 +23,7 @@ impl ChunkSt {
     pub fn init()-> Self {
         Self {
             code: Vec::<u8>::new(),
-            constants: Vec::<f32>::new(),
+            constants: Vec::<Value>::new(),
             lines: Vec::<u8>::new(),
             const_idx: 0
         }
@@ -30,7 +32,7 @@ impl ChunkSt {
 
 pub trait Chunk {
     fn write_chunk(&mut self, byte: u8,line: u8);
-    fn add_constant(&mut self, value: f32)-> u8;
+    fn add_constant(&mut self, value: Value)-> u8;
     //debug
     fn constant_instruct(&self,name: &str, offset: u8);
     fn disassemble_chunk(&self, name: &str);
@@ -42,7 +44,7 @@ impl Chunk for ChunkSt {
         self.lines.push(line);
     }
 
-    fn add_constant(&mut self,value: f32)-> u8 {
+    fn add_constant(&mut self,value: Value)-> u8 {
         self.constants.push(value);
         self.const_idx = self.const_idx+1;
         return self.const_idx-1;
@@ -73,8 +75,28 @@ impl Chunk for ChunkSt {
                 },
                 OpCode::OpConstant=> {
                     self.constant_instruct("OP_CONSTANT",i as u8);
-                    i+=2;
-                }
+                    i+=2; // another idx is const idx so we skip
+                },
+                OpCode::OpNegate=> {
+                    print!("OP_NEGATE\n");
+                    i+=1;
+                },
+                OpCode::OpAdd=> {
+                    print!("OP_ADD\n");
+                    i+=1;
+                },
+                OpCode::OpMul=> {
+                    print!("OP_MUL\n");
+                    i+=1;
+                },
+                OpCode::OpSub=> {
+                    print!("OP_SUB\n");
+                    i+=1;
+                },
+                OpCode::OpDiv=> {
+                    print!("OP_DIV\n");
+                    i+=1;
+                },
                 _=> {
                     println!("Unknown opcode {:?}",op_code);
                     i+=1;}
