@@ -1,1 +1,1 @@
-print "Hello world";
+-7*1+(1+3.3);
