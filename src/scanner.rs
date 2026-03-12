@@ -14,14 +14,31 @@ pub struct ScannerSt {
 
 impl ScannerSt {
     pub fn new(source: String)-> Self {
-        Self {
+        let mut scanner = Self {
             start: 0,
             current: 0,
             line: 1,
             source: source,
             tokens: Vec::new(),
             keywords: HashMap::<String, TokenType>::new()
-        }
+        };
+        scanner.keywords.insert("or".to_string(),TokenType::OR);
+        scanner.keywords.insert("and".to_string(),TokenType::AND);
+        scanner.keywords.insert("class".to_string(),TokenType::CLASS);
+        scanner.keywords.insert("else".to_string(),TokenType::ELSE);
+        scanner.keywords.insert("false".to_string(),TokenType::FALSE);
+        scanner.keywords.insert("for".to_string(),TokenType::FOR);
+        scanner.keywords.insert("fun".to_string(),TokenType::FUN);
+        scanner.keywords.insert("if".to_string(),TokenType::IF);
+        scanner.keywords.insert("nil".to_string(),TokenType::NIL);
+        scanner.keywords.insert("print".to_string(),TokenType::PRINT);
+        scanner.keywords.insert("return".to_string(),TokenType::RETURN);
+        scanner.keywords.insert("super".to_string(),TokenType::SUPER);
+        scanner.keywords.insert("this".to_string(),TokenType::THIS);
+        scanner.keywords.insert("true".to_string(),TokenType::TRUE);
+        scanner.keywords.insert("var".to_string(),TokenType::VAR);
+        scanner.keywords.insert("while".to_string(),TokenType::WHILE);
+        scanner
     }
 }
 
@@ -29,15 +46,17 @@ impl ScannerSt {
 pub trait Scanner {
     // fn new()-> Self where Self: Sized;
     fn scan_tokens(&mut self)-> &Vec<Token>;
-    fn scan_token(&mut self);
+    fn scan_token(&mut self)-> Token;
     fn is_at_end(&self)-> bool;
     fn advance(&mut self)-> char;
     fn peek(&self)-> char;
     fn peek_next(&self)-> char;
-    fn identifier(&mut self);
-    fn number(&mut self);
-    fn string(&mut self);
-    fn add_token(&mut self, ttype: TokenType,literal: Option<Literal>);
+    fn identifier(&mut self)-> Token;
+    fn number(&mut self)-> Token;
+    fn string(&mut self)-> Token;
+    fn add_token(&mut self, ttype: TokenType,literal: Option<Literal>)-> Token;
+    fn error_token(&mut self,c: char)-> Token;
+    fn skip_whitespace(&mut self);
 }
 
 impl Scanner for ScannerSt {
@@ -62,19 +81,19 @@ impl Scanner for ScannerSt {
         return self.source.as_bytes()[self.current+1] as char
     }
 
-    fn identifier(&mut self) {
+    fn identifier(&mut self)-> Token {
         while self.peek().is_alphanumeric() {
             self.advance();
         };
         let text: &str = &self.source[self.start..self.current];
-        // println!("{}",text.to_string());
+        // println!("{}",text);
         match self.keywords.get(text) {
-            Some(ttype) => self.add_token(ttype.clone(),None),
-            None => self.add_token(TokenType::IDENTIFIER,None),
+            Some(ttype) => return self.add_token(ttype.clone(),None),
+            None =>return self.add_token(TokenType::IDENTIFIER,None),
         }        
         
     }
-    fn number(&mut self) {
+    fn number(&mut self)-> Token {
         while self.peek().is_numeric() {
             self.advance();
         }
@@ -86,11 +105,12 @@ impl Scanner for ScannerSt {
             }
         }
         let num_text: &str = &self.source[self.start..self.current];
+        // println!("{:?}",num_text);
         let num: f32 = num_text.parse().unwrap();
-        self.add_token(TokenType::NUMBER,Some(Literal::Float(num)));
+        return self.add_token(TokenType::NUMBER,Some(Literal::Float(num)));
     }
 
-    fn string(&mut self) {
+    fn string(&mut self)-> Token {
         while self.peek() != '"' && !self.is_at_end() {
             if self.peek() == '\n' {self.line +=1 };
             self.advance();
@@ -98,126 +118,130 @@ impl Scanner for ScannerSt {
 
         if self.is_at_end() {
             println!("Unterminated String.");
-            return ()
+            return self.error_token('U');
         }
 
         self.advance();
         let value: &str = &self.source[self.start+1..self.current-1];
-        self.add_token(TokenType::STRING, Some(Literal::String(value.to_string())));
+        return self.add_token(TokenType::STRING, Some(Literal::String(value.to_string())));
     }
 
     fn scan_tokens(&mut self)-> &Vec<Token> {
         self.tokens = Vec::new();
-        self.keywords.insert("or".to_string(),TokenType::OR);
-        self.keywords.insert("and".to_string(),TokenType::AND);
-        self.keywords.insert("class".to_string(),TokenType::CLASS);
-        self.keywords.insert("else".to_string(),TokenType::ELSE);
-        self.keywords.insert("false".to_string(),TokenType::FALSE);
-        self.keywords.insert("for".to_string(),TokenType::FOR);
-        self.keywords.insert("fun".to_string(),TokenType::FUN);
-        self.keywords.insert("if".to_string(),TokenType::IF);
-        self.keywords.insert("nil".to_string(),TokenType::NIL);
-        self.keywords.insert("print".to_string(),TokenType::PRINT);
-        self.keywords.insert("return".to_string(),TokenType::RETURN);
-        self.keywords.insert("super".to_string(),TokenType::SUPER);
-        self.keywords.insert("this".to_string(),TokenType::THIS);
-        self.keywords.insert("true".to_string(),TokenType::TRUE);
-        self.keywords.insert("var".to_string(),TokenType::VAR);
-        self.keywords.insert("while".to_string(),TokenType::WHILE);
-        println!("{:?}",self.keywords.get("hello"));
-        println!("{:?}",self.tokens);
-        // println!("{}",self.current == self.source.len());
-        // println!("{:?}",self.advance());
-        // println!("{:?}",self.source);
-        // println!("{}",self.source.as_bytes()[0] as char);
         while !self.is_at_end() {
-            self.start = self.current;
-            println!("{}",self.current);
-            self.scan_token();
+            let token = self.scan_token();
+            self.tokens.push(token);
         }
-        println!("{:?}",self.tokens);
         &self.tokens
     }
 
-    fn add_token(&mut self, ttype: TokenType, literal: Option<Literal>){
+    fn add_token(&mut self, ttype: TokenType, literal: Option<Literal>)-> Token{
         let text = &self.source[self.start..self.current];
-        self.tokens.push(Token {token_type: ttype, literal:literal, lexeme:text.to_string(), line: self.line});
-        println!(" {:?} start: {}, current: {}",text,self.start,self.current);
+        // println!("{:?}",ttype);
+        return Token {token_type: ttype, literal:literal, lexeme:text.to_string(), line: self.line};
+        // println!(" {:?} start: {}, current: {}",text,self.start,self.current);
 
     }
 
-    fn scan_token(&mut self) {
+    // should return Token with add it to list.
+    fn scan_token(&mut self)->Token {
+
+        self.skip_whitespace();
+
+        self.start = self.current;
+
+        if self.is_at_end(){
+            return self.add_token(TokenType::EOF,Some(Literal::String("".to_string())))
+        }
+
         let c: char = self.advance();
         match c {
-            '('=> self.add_token(TokenType::LeftParen,None),
-            ')'=> self.add_token(TokenType::RIGHT_PAREN,None),
-            '{'=> self.add_token(TokenType::LEFT_BRACE,None),
-            '}'=> self.add_token(TokenType::RIGHT_BRACE,None),
-            ','=> self.add_token(TokenType::COMMA,None),
-            '.'=> self.add_token(TokenType::DOT,None),
-            '-'=> self.add_token(TokenType::MINUS,None),
-            '+'=> self.add_token(TokenType::PLUS,None),
-            ';'=> self.add_token(TokenType::SEMICOLON,None),
-            '*'=> self.add_token(TokenType::STAR,None),
+            '('=> return self.add_token(TokenType::LeftParen,None),
+            ')'=> return self.add_token(TokenType::RIGHT_PAREN,None),
+            '{'=> return self.add_token(TokenType::LEFT_BRACE,None),
+            '}'=> return self.add_token(TokenType::RIGHT_BRACE,None),
+            ','=> return self.add_token(TokenType::COMMA,None),
+            '.'=> return self.add_token(TokenType::DOT,None),
+            '-'=> return self.add_token(TokenType::MINUS,None),
+            '+'=> return self.add_token(TokenType::PLUS,None),
+            ';'=> return self.add_token(TokenType::SEMICOLON,None),
+            '*'=> return self.add_token(TokenType::STAR,None),
             '!'=> {
                 if self.peek() == '=' {
                     self.current+=1;
-                    self.add_token(TokenType::BANG_EQUAL,None);
+                    return self.add_token(TokenType::BANG_EQUAL,None);
                 } else {
-                    self.add_token(TokenType::BANG,None);
+                    return self.add_token(TokenType::BANG,None);
                 };
             },
             '>'=> {
                 if self.peek() == '=' {
                     self.current+=1;
-                    self.add_token(TokenType::GREATER_EQUAL,None);
+                    return self.add_token(TokenType::GREATER_EQUAL,None);
                 } else {
-                    self.add_token(TokenType::GREATER,None);
+                    return self.add_token(TokenType::GREATER,None);
                 };
             },
             '='=> {
                 if self.peek() == '=' {
                     self.current+=1;
-                    self.add_token(TokenType::EQUAL_EQUAL,None);
+                    return self.add_token(TokenType::EQUAL_EQUAL,None);
                 } else {
-                    self.add_token(TokenType::EQUAL,None);
+                    return self.add_token(TokenType::EQUAL,None);
                 };
             },
             '<'=> {
                 if self.peek() == '=' {
                     self.current+=1;
-                    self.add_token(TokenType::LESS_EQUAL,None);
+                    return self.add_token(TokenType::LESS_EQUAL,None);
                 } else {
-                    self.add_token(TokenType::LESS,None);
+                    return self.add_token(TokenType::LESS,None);
                 };
             },
-            '/'=> {
-                if self.peek() == '/' {
-                    self.current += 1;
-                    while self.peek() != '\n' && !self.is_at_end() {
-                        self.advance();
-                    }
-                    // let text: &str = &self.source[self.start..self.current];
-                    // println!("{:?} {} start: {}, current: {}",self.source,text.to_string(),self.start,self.current);
-                } else {
-                    self.add_token(TokenType::SLASH,None)
-                };
-            },
-            ' '=> {}
-            '\r'=> {}
-            '\t'=> {}
-            '\n'=> {self.line+=1;}
-            '\"'=> {println!("In String");self.string()}
+            
             _ => {
                 if c.is_numeric() {
-                    self.number();
+                    return self.number();
                 } else if c.is_alphabetic() || c == '_'{
-                    self.identifier();
+                    return self.identifier();
                 } else {
                     println!("Unexpected Character. {:?}",c);
+                    return self.error_token(c);
                 }
             }
         }
     }
 
+    // skip if there is white spaces and comment.
+    fn skip_whitespace(&mut self) {
+        loop {
+            let c = self.peek();
+            match c {
+                ' ' | '\r' | '\t' => {
+                    self.advance();
+                }
+                '\n' => {
+                    self.line += 1;
+                    self.advance();
+                }
+                '/' => {
+                    if self.peek_next() == '/' {
+                        // skip comment
+                        while self.peek() != '\n' && !self.is_at_end() {
+                            self.advance();
+                        }
+                    } else {
+                        return;
+                    }
+                }
+                _ => return,
+            }
+        }
+    }
+
+    fn error_token(&mut self,c: char)-> Token{
+        return Token {token_type: TokenType::Error, literal:None, lexeme:c.to_string(), line: self.line};
+    }
+
 }
+
