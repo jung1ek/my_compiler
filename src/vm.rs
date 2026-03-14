@@ -4,6 +4,7 @@ use crate::byte_code::*;
 use crate::scanner::*;
 use crate::op::*;
 use crate::compiler::*;
+use crate::value::*;
 
 const MAX_STACK: usize = 256;
 // Interpret Result Type
@@ -29,7 +30,7 @@ impl VM {
         Self {
             chunk: chunkst,
             ip: 0,
-            stack: [0.0;MAX_STACK],
+            stack: [Value::new(ValueType::Float(0.0));MAX_STACK],
             stack_top: 0
         }
     }
@@ -45,8 +46,8 @@ impl VM {
     // return constant value of that code idx.
     fn get_constant(&mut self)-> Value {
         let idx = self.get_byte() as usize;
-        let const_idx = self.chunk.constants[idx];
-        return const_idx;
+        let constant = self.chunk.constants[idx].clone();
+        return constant;
     }
 
     // running byte
@@ -58,6 +59,7 @@ impl VM {
             match op_code {
                 
                 OpCode::OpReturn=> {
+                    
                     print_value(self.pop());
                     return InterpretResult::InterpretOk
                 },
@@ -67,8 +69,11 @@ impl VM {
                     self.push(constant);
                 },
                 OpCode::OpNegate=> {
-                    let value = self.pop();
-                    self.push(-value);
+                    let value = match self.pop().value {
+                        ValueType::Float(f)=>f,
+                        _=> { println!("RuntimeError");0.0}
+                    };
+                    self.push(Value::new(ValueType::Float(-value)));
                 },
                 OpCode::OpAdd=> {
                     binary_op(self,add);
@@ -93,7 +98,7 @@ impl VM {
     fn pop(&mut self)-> Value{
         self.stack_top -= 1;
         let a = self.stack[self.stack_top];
-        self.stack[self.stack_top] = 0.0;
+        self.stack[self.stack_top] = Value::new(ValueType::Float(0.0));
         return a;
     }
 
@@ -114,24 +119,32 @@ impl VM {
 pub fn interpret(source: &str)-> InterpretResult {
 	//defince chunk
 	let mut chunk = ChunkSt::init();
-
+	
+	// compilation
 	if !compile(source,&mut chunk){
 		chunk = ChunkSt::init();
 		return InterpretResult::InterpretCompileError;
 	}
     chunk.disassemble_chunk("test");
 	let mut vm = VM::new(chunk);
+	//running; runtime.
 	let result: InterpretResult = vm.run();
 
 	return result;
 }
 
 // in place modification.
-pub fn binary_op(vm: &mut VM, op:fn(Value,Value)-> Value){
+pub fn binary_op(vm: &mut VM, op:fn(f32,f32)-> f32){
     loop {
-        let b = vm.pop();
-        let a = vm.pop();
-        vm.push(op(a,b));
+        let b = match vm.pop().value {
+            ValueType::Float(f)=>f,
+            _=>{println!("Runtime error");0.0}
+        };
+        let a = match vm.pop().value {
+            ValueType::Float(f)=>f,
+            _=>{println!("Runtime error");0.0}
+        };
+        vm.push(Value::new(ValueType::Float(op(a,b))));
         if true {
             break;
         };

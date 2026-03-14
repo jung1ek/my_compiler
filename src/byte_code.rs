@@ -1,6 +1,5 @@
 // operation code => mul, add ...
-
-pub type Value = f32;
+use crate::value::*;
 
 #[derive(Debug)]
 // #[repr(u8)]
@@ -52,7 +51,7 @@ impl Chunk for ChunkSt {
 
     fn constant_instruct(&self,name: &str, offset: u8){
         let constant = self.code[(offset+1) as usize]; // const idx
-        print!("{:<16} {} '{}'\n",name,constant,self.constants[constant as usize]);
+        print!("{:<16} {} '{:?}'\n",name,constant,self.constants[constant as usize]);
 
     }
 

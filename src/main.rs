@@ -8,6 +8,7 @@ mod byte_code;
 mod vm;
 mod op;
 mod compiler;
+mod value;
 
 use byte_code::*;
 use scanner::*;

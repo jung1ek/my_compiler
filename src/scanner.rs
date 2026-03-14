@@ -1,6 +1,7 @@
 use crate::token_type::*;
 use std::str::*;
 use std::collections::HashMap;
+use crate::value::*;
 
 // traits is like interface
 pub struct ScannerSt {

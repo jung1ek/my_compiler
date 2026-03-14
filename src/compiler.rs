@@ -2,6 +2,7 @@ use crate::scanner::*;
 use crate::byte_code::*;
 use crate::token_type::*;
 use crate::vm::*;
+use crate::value::*;
 //TODO use impl for compiler.
 
 
@@ -115,14 +116,18 @@ fn parse_precedence(chunk: &mut ChunkSt,parser: &mut Parser,scanner: &mut Scanne
 // to emit constant, act as the leaf node for recursion.
 fn number(chunk: &mut ChunkSt,parser: &mut Parser,scanner: &mut ScannerSt) {
 
-    let value: Value = parser.previous
+    let value: Value = Value::new(ValueType::Float(parser.previous
         .clone()
         .unwrap()
         .lexeme
         .parse()
-        .unwrap();
+        .unwrap()));
 
     emit_constant(chunk, parser, value);
+}
+
+fn string(){
+    
 }
 
 // to emit operation byte. (neg,not,..)
